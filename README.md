@@ -86,6 +86,8 @@ Each included tab becomes one String Table. Its name is the localization namespa
 
 English text from the `en` column becomes the source text in each String Table, the PO `msgid`, and the native `en` culture. The `es` column supplies Spanish translations.
 
+To add a language, add a column such as `fr` to the spreadsheet tabs you want to translate, map its header in `format.cultures` (for example, `"fr": "fr-FR"`), and add `fr-FR` to the **Game** target's cultures in Unreal's Localization Dashboard. Keep `en` as the source language, then run `npm run check` and `npm run sync`. For packaged builds, also include the new culture under **Localizations to Package** and select Internationalization Support that covers it.
+
 ## Configuration reference
 
 The following example contains **every setting read from `config.json`**. Replace the spreadsheet ID, credentials path, Unreal project path, editor executable path, and any output or culture settings that differ in your project. JSON does not support comments, so explanations follow the example.
