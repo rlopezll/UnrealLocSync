@@ -39,6 +39,8 @@ build/Release
 
 # Dependency directories
 node_modules/
+credentials.json
+.cache.json
 jspm_packages/
 
 # Snowpack dependency directory (https://snowpack.dev/)
@@ -147,3 +149,10 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# Unreal plugin build output
+Plugins/**/Binaries/
+Plugins/**/Intermediate/
+
+# Local configuration
+config.json

@@ -1,0 +1,14 @@
+{
+  "name": "unreal-loc-sync",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "node index.js --check",
+    "check": "node index.js --check",
+    "sync": "node index.js --apply",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "googleapis": "^148.0.0"
+  }
+}
