@@ -156,3 +156,6 @@ Plugins/**/Intermediate/
 
 # Local configuration
 config.json
+.chatgpt-auth.json
+.chatgpt-auth.json.*.tmp
+test/.auth-test-*.json

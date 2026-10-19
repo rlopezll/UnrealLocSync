@@ -5,6 +5,7 @@ UnrealLocSync reads a Google spreadsheet, creates Unreal String Table assets, an
 ## Contents
 
 - [Quick start](#quick-start)
+- [Translate with do_trans.js](#translate-with-do_transjs)
 - [First run in a new Unreal project](#first-run-in-a-new-unreal-project)
 - [Plugin installation](#plugin-installation)
 - [Spreadsheet format](#spreadsheet-format)
@@ -31,6 +32,49 @@ UnrealLocSync reads a Google spreadsheet, creates Unreal String Table assets, an
 7. Confirm that the String Table and compiled translation exist, then reference a table entry in a Text property. See [Verify the result in Unreal](#verify-the-result-in-unreal).
 
 Use `node index.js --apply --force` to rerun the full pipeline even when the spreadsheet is unchanged. A successful run writes `.cache.json`. Later runs also check the generated files, assets, resources, and manifest before using the cache.
+
+## Translate with do_trans.js
+
+`do_trans.js` fills translations in the Google spreadsheet before `npm run sync` imports them into Unreal. It reads English from the `en` column and writes the requested languages into their matching columns. It uses your authorized ChatGPT account; there is no API key setting.
+
+### Sign in and run
+
+From the repository root, configure `google.spreadsheetId` and the Google service account as described in [Google credentials](#google-credentials). The service account needs **Editor** access to fill cells. Then sign in once and run the translator:
+
+```powershell
+node do_trans.js --login
+node do_trans.js --dry-run
+node do_trans.js
+```
+
+`--login` opens the browser to authorize UnrealLocSync. The session is stored in the Git-ignored `.chatgpt-auth.json`; keep that file private. Use `node do_trans.js --login --new-account` to authorize another ChatGPT account. The tool lists the models available to the signed-in account, selects `gpt-6.1-sol` if available, and otherwise selects the first listed model. You can set `translation.chatgptModel` in `config.json` to select an available model explicitly. ChatGPT plan eligibility and usage limits apply. The sign-in and inference flow follows OpenAI's [authorization guide](https://developers.openai.com/siwc/token-sharing-open-source/sign-in) and [Responses API requirements](https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations).
+
+### How rows are translated
+
+By default, the command visits every spreadsheet tab except those excluded by `format.ignoreSheetNames` or `format.ignoreSheetPrefixes`. It finds each tab's `Key`/`en` header, then considers rows that have both a key and English text. The target languages come from `format.cultures`, excluding the source language. If a tab lacks one of those language columns, that language is skipped for that tab.
+
+For each row, it sends only languages whose cells are empty or contain whitespace. Existing translations are left untouched. If the tab has a `Context` column, its value from the same row is sent to ChatGPT to clarify the English phrase; `Context` is never translated. `--context` adds a separate description that applies to every processed row. The translation request asks ChatGPT to preserve placeholders, variables, markup, line breaks, and meaning.
+
+Before writing, the command reads the row again. If the English text, row context, or a target cell changed during translation, it stops instead of overwriting the newer content. It writes only the translated target cells.
+
+### Options and examples
+
+| Option | Effect |
+| --- | --- |
+| `--langs es,fr` | Translate only the listed language columns. |
+| `--row 12` | Process row 12 in each included tab. |
+| `--sheet "UI"` | Process only the named tab. Combine with `--row` to target one row in one tab. |
+| `--context "Fantasy game"` | Add general context to every translation request. |
+| `--overwrite` | Translate selected cells even when they already contain text. |
+| `--dry-run` | Generate and print translations without writing cells. It still sends requests to ChatGPT and uses plan allowance. |
+
+```powershell
+node do_trans.js --langs es,fr
+node do_trans.js --sheet "UI" --row 12 --langs es --dry-run
+node do_trans.js --sheet "UI" --row 12 --langs es --overwrite
+```
+
+After the spreadsheet contains the translations you want, run `npm run sync` to import them into Unreal.
 
 ## First run in a new Unreal project
 
@@ -79,7 +123,7 @@ Each included tab becomes one String Table. Its name is the localization namespa
 
 - `Key` and the configured source language column (`en`) are required. Each data row needs a unique, nonempty key and nonempty English source text.
 - Additional language headers must appear in `format.cultures`. The supplied mapping writes `en` to culture `en` and `es` to `es-ES`.
-- Completely empty rows and tabs are skipped. Other unexpected headers are treated as language headers and cause an error.
+- Completely empty rows and tabs are skipped. `Context` is optional row metadata used by `do_trans.js`; other unexpected headers are treated as language headers and cause an error.
 - The tab named exactly `Format text` and tabs whose names start with `_` are ignored. These rules are configurable.
 - If a key repeats within a tab, the first row is used. During `--apply`, both Key cells are colored red when `output.markDuplicates` is true. The tool does not read cell colors or clear old marks.
 - Tab names are converted to asset-safe names by replacing unsupported characters with `_`. Two tabs that would produce the same asset name are rejected.
@@ -90,7 +134,7 @@ To add a language, add a column such as `fr` to the spreadsheet tabs you want to
 
 ## Configuration reference
 
-The following example contains **every setting read from `config.json`**. Replace the spreadsheet ID, credentials path, Unreal project path, editor executable path, and any output or culture settings that differ in your project. JSON does not support comments, so explanations follow the example.
+The following example shows the configuration for the sample workflow. Replace the spreadsheet ID, credentials path, Unreal project path, editor executable path, and any output or culture settings that differ in your project. JSON does not support comments, so explanations follow the example.
 
 ```json
 {
@@ -100,10 +144,12 @@ The following example contains **every setting read from `config.json`**. Replac
     "apiVersion": "v4",
     "scopes": ["https://www.googleapis.com/auth/spreadsheets"]
   },
+  "translation": {},
   "format": {
     "ignoreSheetNames": ["Format text"],
     "ignoreSheetPrefixes": ["_"],
     "keyHeader": "Key",
+    "contextHeader": "Context",
     "sourceLanguage": "en",
     "cultures": {
       "en": "en",
@@ -162,6 +208,12 @@ The following example contains **every setting read from `config.json`**. Replac
 | `google.apiVersion` | Google Sheets API version. Use `v4`. |
 | `google.scopes` | OAuth scopes requested by the service account. The supplied scope permits reading the sheet and coloring duplicate cells. |
 
+### Translation
+
+| Setting | What to configure |
+| --- | --- |
+| `translation.chatgptModel` | Optional model slug available to the signed-in ChatGPT account. If omitted, the tool selects a listed model. |
+
 ### Spreadsheet parsing
 
 | Setting | What to configure |
@@ -169,6 +221,7 @@ The following example contains **every setting read from `config.json`**. Replac
 | `format.ignoreSheetNames` | Exact tab names to skip. |
 | `format.ignoreSheetPrefixes` | Prefixes that cause a tab to be skipped. |
 | `format.keyHeader` | Header used for localization keys. |
+| `format.contextHeader` | Optional column containing context for each phrase. It is not treated as a language. |
 | `format.sourceLanguage` | Required header for source text. Use `en` for an English-native project. |
 | `format.cultures` | Map each spreadsheet language header to an Unreal culture. Include the source language. Set the native culture through `format.sourceLanguage`, and use the same culture names in the Unreal Localization Dashboard target. |
 

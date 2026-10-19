@@ -29,6 +29,20 @@ test('reads an offset header and keeps the first duplicate key', () => {
   assert.deepEqual(sheet.languages.map(item => item.culture), ['en', 'es-ES']);
 });
 
+test('accepts Context as row metadata, not a translation language', () => {
+  const rows = [['Key', 'en', 'Context', 'es'],
+    ['Play', 'Play', 'Button on the main menu', 'Jugar']];
+  const sheet = parseSheet({ title: 'UI', sheetId: 7 }, rows, config.format);
+  assert.deepEqual(sheet.languages.map(language => language.header), ['en', 'es']);
+  assert.deepEqual(sheet.entries[0].translations, { en: 'Play', es: 'Jugar' });
+});
+
+test('still rejects unknown language headers', () => {
+  const rows = [['Key', 'en', 'Unknown'], ['Play', 'Play', 'Value']];
+  assert.throws(() => parseSheet({ title: 'UI', sheetId: 7 }, rows, config.format),
+    /Language Unknown has no culture configured/);
+});
+
 test('generates PO and CSV with escaped quotes and newlines', () => {
   const rows = [
     ['Key', 'en', 'es'],

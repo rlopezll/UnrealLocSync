@@ -77,7 +77,7 @@ function parseSheet(sheet, rows, format) {
   const cultures = new Set();
   for (let index = 0; index < headers.length; index++) {
     const header = headers[index];
-    if (!header || header === format.keyHeader) continue;
+    if (!header || header === format.keyHeader || header === (format.contextHeader || 'Context')) continue;
     const culture = format.cultures[header];
     if (!culture) throw new Error('Language ' + header + ' has no culture configured for ' + sheet.title + '.');
     if (cultures.has(culture)) throw new Error('Duplicate culture ' + culture + ' in ' + sheet.title + '.');
