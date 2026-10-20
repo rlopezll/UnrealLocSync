@@ -213,8 +213,7 @@ async function main() {
   const chatgptAuth = require('./chatgpt_auth');
   const models = await chatgptAuth.listModels();
   const slugs = models.map(model => model.slug);
-  options.model = config.translation?.chatgptModel ||
-    (slugs.includes('gpt-6.1-sol') ? 'gpt-6.1-sol' : slugs[0]);
+  options.model = config.translation?.chatgptModel || slugs[0];
   if (!options.model || !slugs.includes(options.model)) {
     throw new Error(`Modelo ChatGPT no disponible: ${options.model || '(ninguno)'}. Modelos disponibles: ${slugs.join(', ')}`);
   }

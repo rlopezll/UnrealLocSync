@@ -47,7 +47,7 @@ node do_trans.js --dry-run
 node do_trans.js
 ```
 
-`--login` opens the browser to authorize UnrealLocSync. The session is stored in the Git-ignored `.chatgpt-auth.json`; keep that file private. Use `node do_trans.js --login --new-account` to authorize another ChatGPT account. The tool lists the models available to the signed-in account, selects `gpt-6.1-sol` if available, and otherwise selects the first listed model. You can set `translation.chatgptModel` in `config.json` to select an available model explicitly. ChatGPT plan eligibility and usage limits apply. The sign-in and inference flow follows OpenAI's [authorization guide](https://developers.openai.com/siwc/token-sharing-open-source/sign-in) and [Responses API requirements](https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations).
+`--login` opens the browser to authorize UnrealLocSync. The session is stored in the Git-ignored `.chatgpt-auth.json`; keep that file private. Use `node do_trans.js --login --new-account` to authorize another ChatGPT account. Set `translation.chatgptModel` in `config.json` to the model slug you want to use, for example `"translation": { "chatgptModel": "gpt-6.1-sol" }`. The tool verifies that the model is available to the signed-in account. If you omit this setting, it uses the first model returned for that account. ChatGPT plan eligibility and usage limits apply. The sign-in and inference flow follows OpenAI's [authorization guide](https://developers.openai.com/siwc/token-sharing-open-source/sign-in) and [Responses API requirements](https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations).
 
 ### How rows are translated
 
@@ -144,7 +144,9 @@ The following example shows the configuration for the sample workflow. Replace t
     "apiVersion": "v4",
     "scopes": ["https://www.googleapis.com/auth/spreadsheets"]
   },
-  "translation": {},
+  "translation": {
+    "chatgptModel": "gpt-6.1-sol"
+  },
   "format": {
     "ignoreSheetNames": ["Format text"],
     "ignoreSheetPrefixes": ["_"],
@@ -212,7 +214,7 @@ The following example shows the configuration for the sample workflow. Replace t
 
 | Setting | What to configure |
 | --- | --- |
-| `translation.chatgptModel` | Optional model slug available to the signed-in ChatGPT account. If omitted, the tool selects a listed model. |
+| `translation.chatgptModel` | Optional model slug available to the signed-in ChatGPT account. If omitted, the tool uses the first model returned for that account. |
 
 ### Spreadsheet parsing
 
